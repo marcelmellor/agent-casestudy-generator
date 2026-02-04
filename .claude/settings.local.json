@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm run dev:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Case Study Generator für sipgate AI Agents\n\nFeatures:\n- OpenAI GPT-4 Integration für Case Study Generierung\n- PDF Export mit jsPDF \\(2 Seiten, professionelles Layout\\)\n- HTML Export für Print\n- Markdown Export\n- JSON Agent-Konfiguration Export\n- Live Preview mit Inline-Editing\n- Beispiel-Case Study für Testing ohne API-Key\n\nÄnderungen:\n- Kontaktinformationen und Telefonnummern aus allen Exporten entfernt\n- PDF-Layout Verbesserungen für Automatisierungen und Workflow\n- Live Preview Footer angepasst\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
     ]
   }
 }
