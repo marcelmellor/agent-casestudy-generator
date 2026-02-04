@@ -1,6 +1,14 @@
 import OpenAI from 'openai';
 
-// Initialisiere den OpenAI Client
+// GPT-4o - Das neueste und leistungsstärkste OpenAI Modell
+const MODEL = 'gpt-4o';
+
+// Prüfe, ob wir in Produktion sind (Netlify)
+const isProduction = () => {
+  return !import.meta.env.VITE_OPENAI_API_KEY;
+};
+
+// Initialisiere den OpenAI Client (nur für Entwicklung)
 const getOpenAIClient = () => {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -10,12 +18,65 @@ const getOpenAIClient = () => {
 
   return new OpenAI({
     apiKey: apiKey,
-    dangerouslyAllowBrowser: true // Nur für Entwicklung! In Produktion über Backend
+    dangerouslyAllowBrowser: true // Nur für Entwicklung!
   });
 };
 
-// GPT-4o - Das neueste und leistungsstärkste OpenAI Modell
-const MODEL = 'gpt-4o';
+/**
+ * Generiert Case Study über Netlify Function (Produktion)
+ */
+const generateViaNetlifyFunction = async (systemPrompt, userPrompt) => {
+  const response = await fetch('/.netlify/functions/generate-casestudy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      provider: 'openai',
+      systemPrompt,
+      userPrompt
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Netlify Function error');
+  }
+
+  return await response.json();
+};
+
+/**
+ * Generiert Case Study direkt über OpenAI (Entwicklung)
+ */
+const generateViaDirect = async (systemPrompt, userPrompt) => {
+  const client = getOpenAIClient();
+
+  const response = await client.chat.completions.create({
+    model: MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature: 1,
+    max_tokens: 8000,
+    response_format: { type: "json_object" }
+  });
+
+  const text = response.choices[0]?.message?.content || '';
+  const caseStudy = JSON.parse(text);
+
+  return {
+    success: true,
+    data: caseStudy,
+    model: MODEL,
+    usage: {
+      inputTokens: response.usage.prompt_tokens,
+      outputTokens: response.usage.completion_tokens,
+      totalTokens: response.usage.total_tokens
+    }
+  };
+};
 
 /**
  * Generiert eine Case Study mit GPT-4o
@@ -25,41 +86,13 @@ const MODEL = 'gpt-4o';
  */
 export const generateCaseStudy = async (systemPrompt, userPrompt) => {
   try {
-    const client = getOpenAIClient();
-
-    const response = await client.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ],
-      temperature: 1,
-      max_tokens: 8000,
-      response_format: { type: "json_object" } // Erzwingt JSON-Ausgabe
-    });
-
-    // Extrahiere den Text aus der Response
-    const text = response.choices[0]?.message?.content || '';
-
-    // Parse JSON
-    const caseStudy = JSON.parse(text);
-
-    return {
-      success: true,
-      data: caseStudy,
-      model: MODEL,
-      usage: {
-        inputTokens: response.usage.prompt_tokens,
-        outputTokens: response.usage.completion_tokens,
-        totalTokens: response.usage.total_tokens
-      }
-    };
+    // In Produktion (Netlify): Nutze sichere Backend-Function
+    // In Entwicklung: Direkter API-Aufruf
+    if (isProduction()) {
+      return await generateViaNetlifyFunction(systemPrompt, userPrompt);
+    } else {
+      return await generateViaDirect(systemPrompt, userPrompt);
+    }
   } catch (error) {
     console.error('Fehler bei der Case Study Generierung:', error);
 
@@ -76,7 +109,9 @@ export const generateCaseStudy = async (systemPrompt, userPrompt) => {
  * @returns {boolean}
  */
 export const isApiKeyConfigured = () => {
-  return !!import.meta.env.VITE_OPENAI_API_KEY;
+  // In Produktion ist der Key auf dem Server, nicht im Client
+  // In Entwicklung prüfen wir die VITE_ Variable
+  return isProduction() || !!import.meta.env.VITE_OPENAI_API_KEY;
 };
 
 /**

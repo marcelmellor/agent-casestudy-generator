@@ -87,30 +87,42 @@ Nach ca. 30-60 Sekunden erhalten Sie:
 ### Projektstruktur
 
 ```
-/Users/kevinpiela/Documents/Claude/
+case-study-builder/
+├── netlify/
+│   └── functions/
+│       └── generate-casestudy.js  # Backend-Proxy für API-Aufrufe
 ├── src/
-│   ├── main.jsx              # Einstiegspunkt
-│   ├── CaseStudyBuilder.jsx  # Hauptkomponente
-│   ├── claudeService.js      # Claude API Integration
-│   ├── pdfService.js         # PDF-Generierung
-│   └── index.css             # Tailwind CSS
-├── .env                      # API-Key (nicht committen!)
-├── .env.example              # Template für .env
-├── package.json              # Dependencies
-├── vite.config.js            # Vite Konfiguration
-└── README.md                 # Diese Datei
+│   ├── main.jsx                   # Einstiegspunkt
+│   ├── CaseStudyBuilder.jsx       # Hauptkomponente
+│   ├── openaiService.js           # OpenAI API Integration
+│   ├── claudeService.js           # Claude API Integration
+│   ├── pdfService.js              # PDF-Generierung
+│   └── index.css                  # Tailwind CSS
+├── .env                           # API-Keys (nicht committen!)
+├── .env.example                   # Template für .env
+├── netlify.toml                   # Netlify Konfiguration
+├── NETLIFY_DEPLOYMENT.md          # Deployment-Anleitung
+├── package.json                   # Dependencies
+├── vite.config.js                 # Vite Konfiguration
+└── README.md                      # Diese Datei
 ```
 
 ## Wichtige Hinweise
 
 ### Sicherheit
 
-⚠️ **Browser-basierte API-Aufrufe sind nur für Entwicklung geeignet!**
+✅ **Sichere Produktion mit Netlify Functions**
 
-Für Produktivumgebungen sollte der API-Key über ein Backend verwaltet werden, um:
-- Den API-Key vor Benutzern zu verbergen
-- Anfragen zu limitieren
-- Kosten zu kontrollieren
+Die Anwendung nutzt Netlify Functions als Backend-Proxy:
+- API-Keys bleiben auf dem Server
+- Keys werden nie im Client-Code exponiert
+- Automatische Umgebungserkennung
+- Keine Secrets im Browser sichtbar
+
+**Entwicklung:** Nutzt `VITE_` Umgebungsvariablen für lokale Tests
+**Produktion:** Nutzt Netlify Functions mit Server-seitigen Keys
+
+Siehe [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md) für Details.
 
 ### API-Kosten
 
@@ -160,6 +172,23 @@ In `src/pdfService.js` können Sie:
 ### Prompt optimieren
 
 In `src/CaseStudyBuilder.jsx` ab Zeile 9 finden Sie den `SYSTEM_PROMPT`, der die Qualität der Case Studies bestimmt.
+
+## Deployment auf Netlify
+
+Die Anwendung ist für sicheres Deployment auf Netlify optimiert.
+
+**Sichere API-Key-Verwaltung:**
+- API-Keys werden über Netlify Functions verwaltet
+- Keys bleiben auf dem Server und werden nie im Client exponiert
+- Automatische Erkennung der Umgebung (Entwicklung vs. Produktion)
+
+**Deployment-Anleitung:** Siehe [NETLIFY_DEPLOYMENT.md](NETLIFY_DEPLOYMENT.md) für detaillierte Schritte.
+
+**Quick Start:**
+1. Deployen Sie Ihr Repository auf Netlify
+2. Fügen Sie `OPENAI_API_KEY` oder `ANTHROPIC_API_KEY` in den Netlify Environment Variables hinzu (OHNE `VITE_` Präfix!)
+3. Deploy wird automatisch getriggert
+4. Fertig - Ihre Keys sind sicher!
 
 ## Build für Produktion
 

@@ -1,6 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Initialisiere den Anthropic Client
+// Claude Opus 4.5 - Das beste verfügbare Modell (Stand Januar 2025)
+const MODEL = 'claude-opus-4-5-20251101';
+
+// Prüfe, ob wir in Produktion sind (Netlify)
+const isProduction = () => {
+  return !import.meta.env.VITE_ANTHROPIC_API_KEY;
+};
+
+// Initialisiere den Anthropic Client (nur für Entwicklung)
 const getAnthropicClient = () => {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
 
@@ -10,12 +18,69 @@ const getAnthropicClient = () => {
 
   return new Anthropic({
     apiKey: apiKey,
-    dangerouslyAllowBrowser: true // Nur für Entwicklung! In Produktion über Backend
+    dangerouslyAllowBrowser: true // Nur für Entwicklung!
   });
 };
 
-// Claude Opus 4.5 - Das beste verfügbare Modell (Stand Januar 2025)
-const MODEL = 'claude-opus-4-5-20251101';
+/**
+ * Generiert Case Study über Netlify Function (Produktion)
+ */
+const generateViaNetlifyFunction = async (systemPrompt, userPrompt) => {
+  const response = await fetch('/.netlify/functions/generate-casestudy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      provider: 'claude',
+      systemPrompt,
+      userPrompt
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Netlify Function error');
+  }
+
+  return await response.json();
+};
+
+/**
+ * Generiert Case Study direkt über Anthropic (Entwicklung)
+ */
+const generateViaDirect = async (systemPrompt, userPrompt) => {
+  const client = getAnthropicClient();
+
+  const response = await client.messages.create({
+    model: MODEL,
+    max_tokens: 8000,
+    temperature: 1,
+    system: systemPrompt,
+    messages: [
+      { role: 'user', content: userPrompt }
+    ]
+  });
+
+  const text = response.content[0]?.text || '';
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+  if (!jsonMatch) {
+    throw new Error('Keine gültige JSON-Antwort vom Modell erhalten');
+  }
+
+  const caseStudy = JSON.parse(jsonMatch[0]);
+
+  return {
+    success: true,
+    data: caseStudy,
+    model: MODEL,
+    usage: {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens
+    }
+  };
+};
 
 /**
  * Generiert eine Case Study mit Claude Opus 4.5
@@ -25,41 +90,13 @@ const MODEL = 'claude-opus-4-5-20251101';
  */
 export const generateCaseStudy = async (systemPrompt, userPrompt) => {
   try {
-    const client = getAnthropicClient();
-
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 8000,
-      temperature: 1,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userPrompt
-        }
-      ]
-    });
-
-    // Extrahiere den Text aus der Response
-    const text = response.content[0]?.text || '';
-
-    // Versuche JSON zu parsen
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Keine gültige JSON-Antwort vom Modell erhalten');
+    // In Produktion (Netlify): Nutze sichere Backend-Function
+    // In Entwicklung: Direkter API-Aufruf
+    if (isProduction()) {
+      return await generateViaNetlifyFunction(systemPrompt, userPrompt);
+    } else {
+      return await generateViaDirect(systemPrompt, userPrompt);
     }
-
-    const caseStudy = JSON.parse(jsonMatch[0]);
-
-    return {
-      success: true,
-      data: caseStudy,
-      model: MODEL,
-      usage: {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens
-      }
-    };
   } catch (error) {
     console.error('Fehler bei der Case Study Generierung:', error);
 
@@ -76,7 +113,9 @@ export const generateCaseStudy = async (systemPrompt, userPrompt) => {
  * @returns {boolean}
  */
 export const isApiKeyConfigured = () => {
-  return !!import.meta.env.VITE_ANTHROPIC_API_KEY;
+  // In Produktion ist der Key auf dem Server, nicht im Client
+  // In Entwicklung prüfen wir die VITE_ Variable
+  return isProduction() || !!import.meta.env.VITE_ANTHROPIC_API_KEY;
 };
 
 /**
