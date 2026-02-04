@@ -248,11 +248,21 @@ export default function CaseStudyBuilder() {
   <meta charset="UTF-8">
   <title>Case Study – ${industry}</title>
   <style>
-    @page { size: A4; margin: 12mm 14mm; }
+    /* Print-optimiert für genau 2 A4-Seiten */
+    @page { size: A4 portrait; margin: 15mm; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { page-break-after: always; min-height: 267mm; max-height: 267mm; }
+      .page:last-child { page-break-after: auto; }
+      .no-print { display: none; }
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', -apple-system, sans-serif; font-size: 9px; line-height: 1.45; color: #1a1a1a; background: #fff; }
-    .page { width: 210mm; min-height: 297mm; padding: 12mm 14mm; page-break-after: always; position: relative; }
-    .page:last-child { page-break-after: auto; }
+    body { font-family: 'Segoe UI', -apple-system, sans-serif; font-size: 9.5px; line-height: 1.4; color: #1a1a1a; background: #fff; }
+    .page { width: 210mm; padding: 0; position: relative; overflow: hidden; }
+    @media screen {
+      .page { min-height: 297mm; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+      body { background: #f0f0f0; padding: 20px 0; }
+    }
     .header { background: linear-gradient(135deg, ${LIME} 0%, #e6ff66 100%); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; position: relative; overflow: hidden; }
     .header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 150px; height: 150px; background: rgba(255,255,255,0.15); border-radius: 50%; }
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; position: relative; }
