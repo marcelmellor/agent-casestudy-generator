@@ -6,7 +6,7 @@ import LivePreview from './LivePreview';
 
 const LIME = '#CCFF00';
 
-const SYSTEM_PROMPT = `Du erstellst erstklassige Case Studies für sipgate AI Agents. Dein Qualitätsstandard ist extrem hoch.
+const SYSTEM_PROMPT = (playbookCount = 4) => `Du erstellst erstklassige Case Studies für sipgate AI Agents. Dein Qualitätsstandard ist extrem hoch.
 
 REFERENZ-BEISPIEL (dieses Niveau ist der Mindeststandard):
 
@@ -133,7 +133,7 @@ QUALITÄTSREGELN:
 5. AUTHENTISCHES ZITAT: Konkreter Vorher/Nachher-Moment, keine Marketing-Floskeln
 6. DRAMATISCHER WORKFLOW: Ein Szenario das den Unterschied plastisch zeigt
 7. FELDNAMEN: snake_case, kurz, sprechend (nicht "frage_1" sondern "stoerungsart")
-8. GENAU 4 PLAYBOOKS: Immer exakt 4 Playbooks mit je 5-6 Tasks erstellen
+8. GENAU ${playbookCount} PLAYBOOKS: Erstelle exakt ${playbookCount} Playbooks mit je 5-6 Tasks
 9. GENAU 5 ERGEBNIS-ZEILEN: Vorher/Nachher-Vergleich mit 5 Kennzahlen
 10. GENAU 4 SAVINGS-BEREICHE: Zeitersparnis in 4 Bereiche aufteilen, Summe = totalHours
 
@@ -224,13 +224,14 @@ export default function CaseStudyBuilder() {
   const [callVolume, setCallVolume] = useState('');
   const [specificUseCase, setSpecificUseCase] = useState('');
   const [salesPerson, setSalesPerson] = useState('');
+  const [playbookCount, setPlaybookCount] = useState(4);
 
   useEffect(() => {
     setApiKeySet(isApiKeyConfigured());
     setModelInfo(getModelInfo());
   }, []);
 
-  const generateHTML = (cs) => {
+  const generateHTML = (cs, logoDataUrl = null) => {
     const playbookSlug = cs.playbooks[0]?.name?.split(':')[1]?.trim().toLowerCase().replace(/\s+/g, '_').replace(/[äöüß]/g, m => ({ä:'ae',ö:'oe',ü:'ue',ß:'ss'}[m])) || 'anfrage';
     const webhookExample = JSON.stringify({
       call_id: "abc-123-def",
@@ -246,22 +247,68 @@ export default function CaseStudyBuilder() {
 <html lang="de">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Case Study – ${industry}</title>
   <style>
-    /* Print-optimiert für genau 2 A4-Seiten */
-    @page { size: A4 portrait; margin: 15mm; }
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .page { page-break-after: always; min-height: 267mm; max-height: 267mm; }
-      .page:last-child { page-break-after: auto; }
-      .no-print { display: none; }
+    /* Print-optimiert für genau 2 A4-Seiten ohne Artefakte */
+    @page {
+      size: A4 portrait;
+      margin: 15mm 12mm;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', -apple-system, sans-serif; font-size: 9.5px; line-height: 1.4; color: #1a1a1a; background: #fff; }
-    .page { width: 210mm; padding: 0; position: relative; overflow: hidden; }
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        width: 210mm;
+      }
+      .page {
+        page-break-after: always;
+        overflow: visible;
+      }
+      .page:last-child {
+        page-break-after: auto;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+      .playbook {
+        page-break-inside: avoid;
+      }
+      .no-print { display: none !important; }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 9px;
+      line-height: 1.35;
+      color: #1a1a1a;
+      background: #fff;
+    }
+    .page {
+      width: 210mm;
+      padding: 12mm;
+      position: relative;
+    }
     @media screen {
-      .page { min-height: 297mm; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-      body { background: #f0f0f0; padding: 20px 0; }
+      .page {
+        min-height: 297mm;
+        margin: 20px auto;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        background: white;
+      }
+      body {
+        background: #e0e0e0;
+        padding: 20px;
+      }
     }
     .header { background: linear-gradient(135deg, ${LIME} 0%, #e6ff66 100%); border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; position: relative; overflow: hidden; }
     .header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 150px; height: 150px; background: rgba(255,255,255,0.15); border-radius: 50%; }
@@ -279,8 +326,20 @@ export default function CaseStudyBuilder() {
     .use-cases { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
     .use-case { background: #f7f7f7; border: 1px solid #e5e5e5; padding: 4px 10px; border-radius: 16px; font-size: 8px; display: flex; align-items: center; gap: 4px; }
     .use-case::before { content: '✓'; color: #22c55e; font-weight: 700; font-size: 9px; }
-    .playbooks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
-    .playbook { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; }
+    .playbooks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80mm, 1fr));
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .playbook {
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px 12px;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
     .playbook-header { margin-bottom: 6px; }
     .playbook-name { font-size: 9px; font-weight: 700; color: #111; display: block; }
     .playbook-trigger { font-size: 7px; color: #666; margin-top: 2px; display: block; }
@@ -312,7 +371,7 @@ export default function CaseStudyBuilder() {
     .webhook { background: #1a1a2e; border-radius: 6px; padding: 10px 12px; margin: 8px 0; overflow: hidden; }
     .webhook-label { font-size: 7px; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .webhook pre { font-family: 'SF Mono', 'Consolas', monospace; font-size: 7px; color: #a5f3a5; line-height: 1.35; margin: 0; }
-    .automations-section { display: flex; gap: 8px; margin: 10px 0; }
+    .automations-grid { display: flex; gap: 8px; margin: 10px 0; page-break-inside: avoid; }
     .automation-group { flex: 1; background: #f8f8f8; border-radius: 6px; padding: 8px; }
     .automation-group-label { font-size: 8px; font-weight: 700; color: #333; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 2px solid ${LIME}; }
     .automation { background: #fff; border-radius: 4px; padding: 6px 8px; margin-bottom: 4px; border-left: 2px solid ${LIME}; }
@@ -351,11 +410,14 @@ export default function CaseStudyBuilder() {
   </style>
 </head>
 <body>
-  <div class="page">
-    <div class="header">
+  <div class="page page-1">
+    <div class="header section">
       <div class="header-top">
         <span class="header-label">sipgate AI Agents</span>
-        <span class="header-logo">sipgate</span>
+        ${logoDataUrl
+          ? `<img src="${logoDataUrl}" alt="sipgate" class="header-logo-img" style="height: 20px; width: auto;">`
+          : `<span class="header-logo">sipgate</span>`
+        }
       </div>
       <h1>${cs.title}</h1>
       <div class="metrics">
@@ -364,15 +426,18 @@ export default function CaseStudyBuilder() {
         <div class="metric"><div class="metric-value">${cs.metrics.availability}</div><div class="metric-label">erreichbar</div></div>
       </div>
     </div>
-    <section class="situation">
+    <section class="situation section">
       <h2>Ausgangssituation</h2>
       <p>${cs.situation.profile}</p>
       <p>${cs.situation.problem}</p>
       <div class="consequence">${cs.situation.consequence}</div>
     </section>
-    <section>
+    <section class="solution-section section">
       <h2>Die Lösung mit sipgate AI Agents</h2>
       <div class="use-cases">${cs.useCases.map(uc => `<span class="use-case">${uc}</span>`).join('')}</div>
+    </section>
+    <section class="playbooks-section section">
+      <h2>Playbooks</h2>
       <div class="playbooks-grid">
       ${cs.playbooks.map(pb => `
         <div class="playbook">
@@ -388,7 +453,9 @@ export default function CaseStudyBuilder() {
         </div>`).join('')}
       </div>
     </section>
-    <section>
+  </div>
+  <div class="page page-2">
+    <section class="results-section section">
       <h2>Die Ergebnisse</h2>
       <div class="results-grid">
         <div class="results-table">
@@ -411,16 +478,14 @@ export default function CaseStudyBuilder() {
       ${cs.results.savingsNote ? `<div class="savings-note">*${cs.results.savingsNote}</div>` : ''}
       <div class="quote"><p>${cs.results.quote}</p></div>
     </section>
-  </div>
-  <div class="page">
-    <section class="integration">
+    <section class="integration section">
       <h2>Integration & Automatisierung</h2>
       <div class="webhook">
         <div class="webhook-label">Webhook-Payload Beispiel (nach ${cs.playbooks[0]?.name?.split(':')[1]?.trim() || 'Anruf'})</div>
         <pre>${webhookExample}</pre>
       </div>
-      <h2>Automatisierungen</h2>
-      <div class="automations-section">
+      <div class="automations-header"><h2>Automatisierungen</h2></div>
+      <div class="automations-grid">
         <div class="automation-group">
           <div class="automation-group-label">🔍 Pre-Call</div>
           ${cs.automations.filter(a => a.type === 'pre-call').map(a => `<div class="automation"><div class="automation-trigger">${a.trigger}</div><div class="automation-action">→ ${a.action}</div></div>`).join('')}
@@ -434,6 +499,9 @@ export default function CaseStudyBuilder() {
           ${cs.automations.filter(a => a.type === 'post-call').map(a => `<div class="automation"><div class="automation-trigger">${a.trigger}</div><div class="automation-action">→ ${a.action}</div></div>`).join('')}
         </div>
       </div>
+    </section>
+    <section class="workflow-section section">
+      <h2>Workflow-Beispiel</h2>
       <div class="workflow">
         <h4>${cs.workflow.title}</h4>
         <div class="workflow-steps">
@@ -442,7 +510,7 @@ export default function CaseStudyBuilder() {
         <div class="workflow-contrast">⚠️ ${cs.workflow.contrast}</div>
       </div>
     </section>
-    <section class="features">
+    <section class="features-section section">
       <h2>Eingesetzte Features</h2>
       <div class="features-grid">
         ${(cs.features || []).map(f => `<span class="feature">${f}</span>`).join('')}
@@ -638,9 +706,10 @@ ${(cs.features || []).map(f => `✅ ${f}`).join('\n')}
 • Unternehmensgröße: ${companySize}
 • Anrufvolumen: ${callVolume} pro Tag
 ${specificUseCase ? `• Bekannter Use Case: ${specificUseCase}` : ''}
+• Anzahl Playbooks: ${playbookCount}
 
 WICHTIG:
-- Erstelle EXAKT 4 Playbooks mit je 5-6 Tasks
+- Erstelle EXAKT ${playbookCount} Playbooks mit je 5-6 Tasks
 - Erstelle EXAKT 5 Vergleichszeilen in results.comparison
 - Erstelle EXAKT 4 Einträge in results.savings (die Summe muss totalHours ergeben)
 - Verwende Tilde (~) bei den Stunden-Angaben
@@ -649,7 +718,7 @@ WICHTIG:
 Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
 
     try {
-      const result = await generateCaseStudy(SYSTEM_PROMPT, userPrompt);
+      const result = await generateCaseStudy(SYSTEM_PROMPT(playbookCount), userPrompt);
 
       if (result.success) {
         setCaseStudy(result.data);
@@ -676,10 +745,37 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadPDF = async () => {
-    if (caseStudy) {
-      await generateAndSavePDF(caseStudy, industry, salesPerson);
+  const handlePrintPDF = async () => {
+    if (!caseStudy) return;
+
+    // Lade das Logo als Data-URL
+    let logoDataUrl = null;
+    try {
+      const response = await fetch('/180227_sipgate_wort-bild-marke_schwarz_RGB.png');
+      const blob = await response.blob();
+      logoDataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.warn('Logo konnte nicht geladen werden, verwende Text-Fallback');
     }
+
+    // Erstelle ein neues Fenster mit dem HTML
+    const printWindow = window.open('', '_blank');
+    const htmlContent = generateHTML(caseStudy, logoDataUrl);
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Warte bis Inhalte geladen sind, dann öffne Print-Dialog
+    printWindow.onload = () => {
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
   };
 
   if (!apiKeySet) {
@@ -770,9 +866,25 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
               <label className="block text-sm font-semibold mb-2 text-gray-700">Bekannter Use Case <span className="font-normal text-gray-400">(optional)</span></label>
               <input type="text" placeholder="z.B. Terminvereinbarung, Störungsmeldung..." className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={specificUseCase} onChange={(e) => setSpecificUseCase(e.target.value)} />
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2 text-gray-700">Ihr Name <span className="font-normal text-gray-400">(optional)</span></label>
-              <input type="text" placeholder="Für den Kontakt im Dokument" className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Anzahl Playbooks</label>
+                <select
+                  value={playbookCount}
+                  onChange={(e) => setPlaybookCount(parseInt(e.target.value))}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors bg-white"
+                >
+                  <option value={2}>2 Playbooks</option>
+                  <option value={3}>3 Playbooks</option>
+                  <option value={4}>4 Playbooks (Standard)</option>
+                  <option value={5}>5 Playbooks</option>
+                  <option value={6}>6 Playbooks</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Ihr Name <span className="font-normal text-gray-400">(optional)</span></label>
+                <input type="text" placeholder="Für den Kontakt im Dokument" className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} />
+              </div>
             </div>
             {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm">{error}</div>}
             <button onClick={generate} disabled={loading || !industry || !companySize || !callVolume} className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
@@ -838,16 +950,30 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
             </div>
 
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">📄 Hochwertiges PDF</h2>
-              <p className="text-sm text-gray-500 mb-3">Professionell gestaltete 2-Seiten Case Study mit jsPDF</p>
-              <button onClick={handleDownloadPDF} className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
-                PDF herunterladen
+              <h2 className="font-bold text-lg mb-2">📄 Als PDF speichern</h2>
+              <p className="text-sm text-gray-500 mb-3">Öffnet Print-Dialog → "Als PDF speichern" wählen</p>
+              <button onClick={handlePrintPDF} className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
+                🖨️ Drucken / Als PDF speichern
               </button>
             </div>
             <div className="pb-4 border-b">
               <h2 className="font-bold text-lg mb-2">🌐 HTML für Print</h2>
               <p className="text-sm text-gray-500 mb-3">HTML-Version zum Drucken oder Weiterverarbeiten</p>
-              <button onClick={() => downloadFile(generateHTML(caseStudy), `case-study-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.html`, 'text/html;charset=utf-8')} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">HTML herunterladen</button>
+              <button onClick={async () => {
+                let logoDataUrl = null;
+                try {
+                  const response = await fetch('/180227_sipgate_wort-bild-marke_schwarz_RGB.png');
+                  const blob = await response.blob();
+                  logoDataUrl = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                  });
+                } catch (error) {
+                  console.warn('Logo konnte nicht geladen werden');
+                }
+                downloadFile(generateHTML(caseStudy, logoDataUrl), `case-study-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.html`, 'text/html;charset=utf-8');
+              }} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">HTML herunterladen</button>
             </div>
             <div className="pb-4 border-b">
               <h2 className="font-bold text-lg mb-2">📝 Markdown</h2>
