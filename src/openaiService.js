@@ -62,10 +62,10 @@ const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 1,
-      max_tokens: 16000, // Erhöht von 8000
+      temperature: 0.7, // Reduziert von 1 für schnellere, fokussiertere Antworten
+      max_tokens: 16000,
       response_format: { type: "json_object" },
-      timeout: 120000 // 2 Minuten Timeout
+      timeout: 180000 // 3 Minuten Timeout (erhöht von 2 Minuten)
     });
 
     console.log('✅ Received response from OpenAI');
@@ -186,7 +186,7 @@ export const getModelInfo = () => {
   return {
     name: 'GPT-4o',
     id: MODEL,
-    description: 'OpenAI\'s neuestes und leistungsstärkstes Modell',
+    description: 'Höchste Qualität für professionelle Case Studies',
     releaseDate: '2024'
   };
 };
