@@ -262,16 +262,29 @@ export default function CaseStudyBuilder() {
         color-adjust: exact !important;
       }
       body {
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
         width: 210mm;
       }
       .page {
-        page-break-after: always;
-        overflow: visible;
+        page-break-after: always !important;
+        page-break-before: auto !important;
+        page-break-inside: avoid !important;
+        margin: 0 !important;
+        padding: 12mm !important;
+        min-height: auto !important;
+        max-height: none !important;
+        height: auto !important;
       }
       .page:last-child {
-        page-break-after: auto;
+        page-break-after: auto !important;
+      }
+      .page-1 {
+        /* Erste Seite - Header + Situation + Playbooks */
+      }
+      .page-2 {
+        /* Zweite Seite - Alles andere */
+        page-break-before: always !important;
       }
       .section {
         page-break-inside: avoid;
@@ -297,13 +310,16 @@ export default function CaseStudyBuilder() {
       width: 210mm;
       padding: 12mm;
       position: relative;
+      box-sizing: border-box;
     }
     @media screen {
       .page {
-        min-height: 297mm;
+        min-height: 277mm;
+        max-height: 277mm;
         margin: 20px auto;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         background: white;
+        overflow: visible;
       }
       body {
         background: #e0e0e0;
