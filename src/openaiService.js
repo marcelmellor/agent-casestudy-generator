@@ -49,11 +49,12 @@ const generateViaNetlifyFunction = async (systemPrompt, userPrompt) => {
 /**
  * Generiert Case Study direkt über OpenAI (Entwicklung)
  */
-const generateViaDirect = async (systemPrompt, userPrompt) => {
+const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
   const client = getOpenAIClient();
+  const MAX_RETRIES = 2;
 
   try {
-    console.log('🚀 Sending request to OpenAI with model:', MODEL);
+    console.log(`🚀 Sending request to OpenAI (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
 
     const response = await client.chat.completions.create({
       model: MODEL,
@@ -62,17 +63,26 @@ const generateViaDirect = async (systemPrompt, userPrompt) => {
         { role: 'user', content: userPrompt }
       ],
       temperature: 1,
-      max_tokens: 8000,
-      response_format: { type: "json_object" }
+      max_tokens: 16000, // Erhöht von 8000
+      response_format: { type: "json_object" },
+      timeout: 120000 // 2 Minuten Timeout
     });
 
     console.log('✅ Received response from OpenAI');
+    console.log('📊 Tokens used:', response.usage.total_tokens);
 
     const text = response.choices[0]?.message?.content || '';
+
+    // Prüfe ob die Antwort komplett ist
+    if (response.choices[0]?.finish_reason === 'length') {
+      console.warn('⚠️ Response was cut off due to token limit!');
+      throw new Error('Die Antwort war zu lang und wurde abgeschnitten. Versuche es mit weniger Playbooks.');
+    }
 
     // Bessere Fehlerbehandlung beim JSON-Parsing
     try {
       const caseStudy = JSON.parse(text);
+      console.log('✅ Successfully parsed JSON');
       return {
         success: true,
         data: caseStudy,
@@ -84,24 +94,48 @@ const generateViaDirect = async (systemPrompt, userPrompt) => {
         }
       };
     } catch (parseError) {
-      console.error('JSON Parse Error. Received text:', text.substring(0, 500));
-      throw new Error(`Ungültige JSON-Antwort von OpenAI: ${parseError.message}`);
+      console.error('❌ JSON Parse Error. Response length:', text.length);
+      console.error('First 500 chars:', text.substring(0, 500));
+      console.error('Last 500 chars:', text.substring(text.length - 500));
+
+      // Retry bei Parse-Fehler
+      if (retryCount < MAX_RETRIES) {
+        console.log(`🔄 Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 Sekunden warten
+        return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+      }
+
+      throw new Error(`Ungültige JSON-Antwort von OpenAI nach ${MAX_RETRIES + 1} Versuchen. Bitte versuche es erneut.`);
     }
   } catch (apiError) {
     console.error('❌ OpenAI API Error:', apiError);
     console.error('Error status:', apiError.status);
     console.error('Error message:', apiError.message);
-    console.error('Error response:', apiError.response?.data);
+
+    // Retry bei 429 (Rate Limit)
+    if (apiError.status === 429 && retryCount < MAX_RETRIES) {
+      const waitTime = (retryCount + 1) * 3000; // 3, 6 Sekunden
+      console.log(`⏱️ Rate limit hit. Waiting ${waitTime/1000}s before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+    }
+
+    // Retry bei Server-Fehlern
+    if ((apiError.status === 500 || apiError.status === 502 || apiError.status === 503) && retryCount < MAX_RETRIES) {
+      console.log(`🔄 Server error. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+    }
 
     // Spezifische Fehlermeldungen
     if (apiError.status === 401) {
       throw new Error('❌ Ungültiger API-Key. Bitte erstellen Sie einen neuen Key auf platform.openai.com/api-keys');
     } else if (apiError.status === 429) {
-      throw new Error('⏱️ Rate Limit erreicht. Bitte warten Sie einen Moment.');
+      throw new Error('⏱️ Rate Limit erreicht. Bitte warten Sie 10-20 Sekunden und versuchen Sie es erneut.');
     } else if (apiError.status === 500 || apiError.status === 502 || apiError.status === 503) {
-      throw new Error('🔧 OpenAI Server-Fehler. Bitte versuchen Sie es später erneut.');
+      throw new Error('🔧 OpenAI Server-Fehler nach mehreren Versuchen. Bitte versuchen Sie es später erneut.');
     } else if (apiError.message && apiError.message.includes('<HTML>')) {
-      throw new Error('❌ API-Key Problem: OpenAI gibt HTML statt JSON zurück. Ihr API-Key ist wahrscheinlich ungültig oder abgelaufen. Bitte erstellen Sie einen neuen auf platform.openai.com/api-keys');
+      throw new Error('❌ API-Key Problem: OpenAI gibt HTML statt JSON zurück.');
     }
 
     throw new Error(`OpenAI API Fehler: ${apiError.message || 'Unbekannter Fehler'}`);
