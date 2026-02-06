@@ -52,30 +52,60 @@ const generateViaNetlifyFunction = async (systemPrompt, userPrompt) => {
 const generateViaDirect = async (systemPrompt, userPrompt) => {
   const client = getOpenAIClient();
 
-  const response = await client.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    temperature: 1,
-    max_tokens: 8000,
-    response_format: { type: "json_object" }
-  });
+  try {
+    console.log('🚀 Sending request to OpenAI with model:', MODEL);
 
-  const text = response.choices[0]?.message?.content || '';
-  const caseStudy = JSON.parse(text);
+    const response = await client.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 1,
+      max_tokens: 8000,
+      response_format: { type: "json_object" }
+    });
 
-  return {
-    success: true,
-    data: caseStudy,
-    model: MODEL,
-    usage: {
-      inputTokens: response.usage.prompt_tokens,
-      outputTokens: response.usage.completion_tokens,
-      totalTokens: response.usage.total_tokens
+    console.log('✅ Received response from OpenAI');
+
+    const text = response.choices[0]?.message?.content || '';
+
+    // Bessere Fehlerbehandlung beim JSON-Parsing
+    try {
+      const caseStudy = JSON.parse(text);
+      return {
+        success: true,
+        data: caseStudy,
+        model: MODEL,
+        usage: {
+          inputTokens: response.usage.prompt_tokens,
+          outputTokens: response.usage.completion_tokens,
+          totalTokens: response.usage.total_tokens
+        }
+      };
+    } catch (parseError) {
+      console.error('JSON Parse Error. Received text:', text.substring(0, 500));
+      throw new Error(`Ungültige JSON-Antwort von OpenAI: ${parseError.message}`);
     }
-  };
+  } catch (apiError) {
+    console.error('❌ OpenAI API Error:', apiError);
+    console.error('Error status:', apiError.status);
+    console.error('Error message:', apiError.message);
+    console.error('Error response:', apiError.response?.data);
+
+    // Spezifische Fehlermeldungen
+    if (apiError.status === 401) {
+      throw new Error('❌ Ungültiger API-Key. Bitte erstellen Sie einen neuen Key auf platform.openai.com/api-keys');
+    } else if (apiError.status === 429) {
+      throw new Error('⏱️ Rate Limit erreicht. Bitte warten Sie einen Moment.');
+    } else if (apiError.status === 500 || apiError.status === 502 || apiError.status === 503) {
+      throw new Error('🔧 OpenAI Server-Fehler. Bitte versuchen Sie es später erneut.');
+    } else if (apiError.message && apiError.message.includes('<HTML>')) {
+      throw new Error('❌ API-Key Problem: OpenAI gibt HTML statt JSON zurück. Ihr API-Key ist wahrscheinlich ungültig oder abgelaufen. Bitte erstellen Sie einen neuen auf platform.openai.com/api-keys');
+    }
+
+    throw new Error(`OpenAI API Fehler: ${apiError.message || 'Unbekannter Fehler'}`);
+  }
 };
 
 /**
