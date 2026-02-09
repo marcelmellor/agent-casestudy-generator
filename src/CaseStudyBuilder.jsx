@@ -735,7 +735,7 @@ WICHTIG:
 Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
 
     try {
-      const result = await generateCaseStudy(SYSTEM_PROMPT(playbookCount), userPrompt);
+      const result = await generateCaseStudy(SYSTEM_PROMPT(playbookCount), userPrompt, playbookCount);
 
       if (result.success) {
         setCaseStudy(result.data);

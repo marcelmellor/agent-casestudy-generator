@@ -1,7 +1,19 @@
 import OpenAI from 'openai';
 
-// GPT-4o - Das neueste und leistungsstärkste OpenAI Modell
-const MODEL = 'gpt-4o';
+// Modelle für unterschiedliche Komplexität
+const MODEL_PREMIUM = 'gpt-4o';      // Für 2-3 Playbooks
+const MODEL_FAST = 'gpt-4o-mini';    // Für 4+ Playbooks (keine Timeouts)
+
+/**
+ * Wählt das optimale Model basierend auf Playbook-Anzahl
+ * @param {number} playbookCount - Anzahl der zu generierenden Playbooks
+ * @returns {string} - Model ID
+ */
+const selectModel = (playbookCount) => {
+  // Für 4+ Playbooks: GPT-4o-mini (schneller, keine Timeouts)
+  // Für 2-3 Playbooks: GPT-4o (höchste Qualität)
+  return playbookCount >= 4 ? MODEL_FAST : MODEL_PREMIUM;
+};
 
 // Prüfe, ob wir in Produktion sind (Netlify)
 const isProduction = () => {
@@ -49,15 +61,17 @@ const generateViaNetlifyFunction = async (systemPrompt, userPrompt) => {
 /**
  * Generiert Case Study direkt über OpenAI (Entwicklung)
  */
-const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
+const generateViaDirect = async (systemPrompt, userPrompt, playbookCount = 4, retryCount = 0) => {
   const client = getOpenAIClient();
   const MAX_RETRIES = 2;
+  const selectedModel = selectModel(playbookCount);
 
   try {
     console.log(`🚀 Sending request to OpenAI (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+    console.log(`📊 Using model: ${selectedModel} (${playbookCount} Playbooks)`);
 
     const response = await client.chat.completions.create({
-      model: MODEL,
+      model: selectedModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -86,7 +100,7 @@ const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
       return {
         success: true,
         data: caseStudy,
-        model: MODEL,
+        model: selectedModel,
         usage: {
           inputTokens: response.usage.prompt_tokens,
           outputTokens: response.usage.completion_tokens,
@@ -102,7 +116,7 @@ const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
       if (retryCount < MAX_RETRIES) {
         console.log(`🔄 Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2 Sekunden warten
-        return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+        return generateViaDirect(systemPrompt, userPrompt, playbookCount, retryCount + 1);
       }
 
       throw new Error(`Ungültige JSON-Antwort von OpenAI nach ${MAX_RETRIES + 1} Versuchen. Bitte versuche es erneut.`);
@@ -117,14 +131,14 @@ const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
       const waitTime = (retryCount + 1) * 3000; // 3, 6 Sekunden
       console.log(`⏱️ Rate limit hit. Waiting ${waitTime/1000}s before retry...`);
       await new Promise(resolve => setTimeout(resolve, waitTime));
-      return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+      return generateViaDirect(systemPrompt, userPrompt, playbookCount, retryCount + 1);
     }
 
     // Retry bei Server-Fehlern
     if ((apiError.status === 500 || apiError.status === 502 || apiError.status === 503) && retryCount < MAX_RETRIES) {
       console.log(`🔄 Server error. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
       await new Promise(resolve => setTimeout(resolve, 2000));
-      return generateViaDirect(systemPrompt, userPrompt, retryCount + 1);
+      return generateViaDirect(systemPrompt, userPrompt, playbookCount, retryCount + 1);
     }
 
     // Spezifische Fehlermeldungen
@@ -143,19 +157,20 @@ const generateViaDirect = async (systemPrompt, userPrompt, retryCount = 0) => {
 };
 
 /**
- * Generiert eine Case Study mit GPT-4o
+ * Generiert eine Case Study mit GPT-4o oder GPT-4o-mini
  * @param {string} systemPrompt - Der System-Prompt mit allen Anweisungen
  * @param {string} userPrompt - Der User-Prompt mit den spezifischen Anforderungen
+ * @param {number} playbookCount - Anzahl der Playbooks (für Model-Auswahl)
  * @returns {Promise<Object>} Die generierte Case Study als JSON-Objekt
  */
-export const generateCaseStudy = async (systemPrompt, userPrompt) => {
+export const generateCaseStudy = async (systemPrompt, userPrompt, playbookCount = 4) => {
   try {
     // In Produktion (Netlify): Nutze sichere Backend-Function
     // In Entwicklung: Direkter API-Aufruf
     if (isProduction()) {
       return await generateViaNetlifyFunction(systemPrompt, userPrompt);
     } else {
-      return await generateViaDirect(systemPrompt, userPrompt);
+      return await generateViaDirect(systemPrompt, userPrompt, playbookCount);
     }
   } catch (error) {
     console.error('Fehler bei der Case Study Generierung:', error);
@@ -184,9 +199,9 @@ export const isApiKeyConfigured = () => {
  */
 export const getModelInfo = () => {
   return {
-    name: 'GPT-4o',
-    id: MODEL,
-    description: 'Höchste Qualität für professionelle Case Studies',
+    name: 'GPT-4o / GPT-4o-mini',
+    id: 'auto',
+    description: 'Smart Model Selection - Qualität & Geschwindigkeit',
     releaseDate: '2024'
   };
 };
