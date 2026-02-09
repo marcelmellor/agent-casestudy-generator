@@ -5,6 +5,7 @@ import { sampleCaseStudy } from './sampleCaseStudy';
 import LivePreview from './LivePreview';
 
 const LIME = '#CCFF00';
+const VERSION = '2.0.0'; // App Version
 
 const SYSTEM_PROMPT = (playbookCount = 4) => `Du erstellst erstklassige Case Studies für sipgate AI Agents. Dein Qualitätsstandard ist extrem hoch.
 
@@ -857,11 +858,16 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
             </div>
             <h1 className="text-3xl font-extrabold mb-2">Case Study Builder</h1>
             <p className="text-gray-700">Branchenspezifische Case Studies in Premium-Qualität</p>
-            {modelInfo && (
-              <div className="mt-4 text-xs bg-white/30 rounded-lg px-3 py-2">
-                <span className="font-semibold">Powered by {modelInfo.name}</span> — Das leistungsstärkste Modell
+            <div className="mt-4 flex items-center justify-between gap-3">
+              {modelInfo && (
+                <div className="flex-1 text-xs bg-white/30 rounded-lg px-3 py-2">
+                  <span className="font-semibold">Powered by {modelInfo.name}</span> — Das leistungsstärkste Modell
+                </div>
+              )}
+              <div className="text-xs bg-black/20 rounded-lg px-3 py-2 font-mono">
+                v{VERSION}
               </div>
-            )}
+            </div>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg space-y-5">
             <div>
