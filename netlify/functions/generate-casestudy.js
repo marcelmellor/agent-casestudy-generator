@@ -80,10 +80,11 @@ async function generateWithOpenAI(systemPrompt, userPrompt) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 1,
-      max_tokens: 8000,
+      temperature: 0.7, // Optimiert für Geschwindigkeit
+      max_tokens: 16000, // Erhöht für komplexe Case Studies
       response_format: { type: "json_object" }
-    })
+    }),
+    signal: AbortSignal.timeout(180000) // 3 Minuten Timeout
   });
 
   if (!response.ok) {
