@@ -3,11 +3,12 @@ import { generateCaseStudy, isApiKeyConfigured, getModelInfo } from './openaiSer
 import { generateAndSavePDF } from './pdfService';
 import { sampleCaseStudy } from './sampleCaseStudy';
 import LivePreview from './LivePreview';
+import { t } from './translations';
 
 const LIME = '#CCFF00';
-const VERSION = '2.0.0'; // App Version
+const VERSION = '2.1.0'; // App Version
 
-const SYSTEM_PROMPT = (playbookCount = 4) => `Du erstellst erstklassige Case Studies für sipgate AI Agents. Dein Qualitätsstandard ist extrem hoch.
+const SYSTEM_PROMPT_DE = (playbookCount = 4) => `Du erstellst erstklassige Case Studies für sipgate AI Agents. Dein Qualitätsstandard ist extrem hoch.
 
 REFERENZ-BEISPIEL (dieses Niveau ist der Mindeststandard):
 
@@ -211,6 +212,213 @@ Antworte NUR mit diesem JSON (keine Erklärungen):
   "agentName": "Passender deutscher Vorname"
 }`;
 
+const SYSTEM_PROMPT_EN = (playbookCount = 4) => `You create first-class case studies for sipgate AI Agents. Your quality standard is extremely high.
+
+REFERENCE EXAMPLE (this level is the minimum standard):
+
+---
+TITLE: "Voice AI for Property Management: Maintenance, Meter Readings, Appointments – Automatically Captured, Intelligently Routed"
+
+METRICS: 87% automated | 65 hrs/month saved | 24/7 availability
+
+INITIAL SITUATION:
+"A property management company with 8 employees manages 2,400 residential units across 45 properties. 60-80 calls come in daily – maintenance reports, meter readings, appointment requests, questions about utility bills.
+
+The problem: Staff spend 3-4 hours daily on the phone with repetitive inquiries. During heating season and pipe bursts, call volume explodes – precisely when quick action is needed. Outside business hours, urgent maintenance reports land on voicemail and aren't processed until the next morning.
+
+The consequence: Tenants are frustrated by poor reachability, owners complain, and critical issues are detected too late. A water damage reported on Friday at 6 PM causes significant damage by Monday morning."
+
+USE CASES (industry-specific, 5 items):
+• Maintenance reports of all kinds (heating, water, elevator, electrical)
+• Meter readings (water, heating, electricity)
+• Appointment requests for unit handovers and inspections
+• Questions about utility bills and documents
+• General inquiries (office hours, responsibilities, house rules)
+
+PLAYBOOKS (4 items, with natural questions):
+
+Playbook 1: Maintenance Report
+Trigger: The caller reports a problem (heating, water, elevator, etc.)
+| property_address | "Which property is this about? Please give me the address." |
+| unit | "Which unit do you live in? Please give me your name and unit number." |
+| issue_type | "What kind of issue is it? Is it related to heating, water, elevator, or something else?" |
+| urgency | "Is this an emergency? For example, is water actively leaking or has the heating completely failed in freezing temperatures?" |
+| description | "Can you describe the problem in more detail? How long has it been going on?" |
+| availability | "What number can we reach you at for follow-up? When would a technician visit work?" |
+Action: For critical issues (water leak, heating failure in winter, persons stuck in elevator), immediate transfer to emergency service.
+
+Playbook 2: Meter Reading
+Trigger: The caller wants to report a meter reading
+| property_address | "For which address would you like to report the meter reading?" |
+| unit | "What is your name and unit number?" |
+| meter_type | "Which meter is it? Water, heating, or electricity?" |
+| meter_number | "Can you give me the meter number? You'll find it on the meter." |
+| meter_reading | "What is the current meter reading?" |
+| reading_date | "When did you take the reading?" |
+
+Playbook 3: Appointment Request
+Trigger: The caller wants to schedule an appointment
+| appointment_type | "What kind of appointment is this about? Unit handover, inspection, or consultation?" |
+| property_address | "Which property is this about?" |
+| unit | "What is your name and unit number, if applicable?" |
+| preferred_time | "When would an appointment work for you? Do you have any preferences?" |
+| contact | "What phone number or email can we reach you at?" |
+
+Playbook 4: Utility Bill Inquiry
+Trigger: The caller has questions about utility bills
+| tenant_name | "What is your name?" |
+| property_address | "Which property do you live in?" |
+| billing_year | "Which billing year is this about?" |
+| inquiry_type | "Do you have a comprehension question, want to file an objection, or need supporting documents?" |
+| inquiry_details | "Can you describe your concern in more detail?" |
+
+RESULTS:
+| Availability | Mon-Fri 8am-5pm | 24/7/365 |
+| Missed calls | ~25/day | 0 |
+| Phone time per day (team) | 3-4 hours | 45 minutes |
+| Response time critical issues (nights/weekends) | Next business day | Immediate |
+| Post-processing per call | 3-5 minutes | 0 (automatic) |
+
+TIME SAVINGS (broken down specifically, with tilde for "approximately"):
+• Answering calls & standard questions: ~40 hours
+• Capturing & documenting information: ~15 hours
+• Coordinating transfers: ~5 hours
+• Callbacks due to missing info: ~5 hours
+→ TOTAL: ~65 hours/month (equivalent to almost a full work week)
+
+QUOTE (authentic, specific, not promotional):
+"Monday mornings used to be a nightmare – 40 messages on the answering machine, half of them maintenance issues from the weekend. Now all issues are already captured, prioritized, and urgent cases have been forwarded directly to emergency services. My team can finally focus on managing the properties."
+
+AUTOMATIONS (6 specific examples, various types):
+
+Pre-Call (Caller Identification & Context):
+• Incoming call → Match phone number in CRM → Provide tenant data & history to agent
+• Incoming call → Load open tickets for this number → Agent knows ongoing issues
+
+In-Call (During the Conversation):
+• Critical issue detected → Immediate transfer to emergency service
+• Appointment requested → Live calendar query → Offer available slots during the call
+
+Post-Call (After the Conversation):
+• Issue captured → Create ticket in property management software + email to case worker
+• Meter reading captured → Transfer value to billing system + confirmation to tenant
+
+WORKFLOW EXAMPLE (dramatic, shows the difference):
+"Example: Water Damage Friday Evening"
+7:15 PM – Tenant calls, reports water leak
+7:15 PM – Agent captures all details via "Maintenance Report" playbook
+7:16 PM – Agent recognizes urgency → transfers to emergency service
+7:16 PM – Webhook sent → Ticket automatically created
+7:16 PM – Make workflow: SMS to emergency plumber with address & contact
+7:16 PM – Email summary to team
+7:20 PM – Plumber calls tenant back
+8:00 PM – Water damage resolved
+Contrast: "Without AI Agent: Discovered Monday morning, significant water damage."
+
+FEATURES USED (for the features section):
+• FAQ & Knowledge Base (with industry-specific content)
+• 4 Playbooks for structured processes
+• Intelligent intent recognition
+• Transfer for critical cases
+• Email summaries after every call
+• Webhook integration for post-call automation
+• GDPR-compliant EU data hosting
+
+DEMO PROMPTS (4 realistic scenarios):
+• "I have a burst pipe in my apartment"
+• "I'd like to report my meter reading"
+• "I need an appointment for the unit handover"
+• "I have a question about my utility bill"
+---
+
+QUALITY RULES:
+1. SPECIFIC NUMBERS: Always use specific numbers (not "many calls" but "60-80 calls daily")
+2. INDUSTRY LANGUAGE: Use industry-specific terminology, shows understanding
+3. NATURAL QUESTIONS: Formulate playbook questions like a real person would, polite and clear
+4. EMOTIONAL HOOK: The consequence must be tangible (frustration, lost money, stress)
+5. AUTHENTIC QUOTE: Specific before/after moment, no marketing clichés
+6. DRAMATIC WORKFLOW: A scenario that vividly shows the difference
+7. FIELD NAMES: snake_case, short, descriptive (not "question_1" but "issue_type")
+8. EXACTLY ${playbookCount} PLAYBOOKS: Create exactly ${playbookCount} playbooks with 5-6 tasks each
+9. EXACTLY 5 RESULT ROWS: Before/after comparison with 5 metrics
+10. EXACTLY 4 SAVINGS AREAS: Break down time savings into 4 areas, sum = totalHours
+
+Create a case study for the given industry at EXACTLY this quality level.
+
+Respond ONLY with this JSON (no explanations):
+
+{
+  "title": "Voice AI for [Industry]: [Specific subtitle showing the benefit]",
+  "metrics": {
+    "automation": "XX%",
+    "time": "XX hrs",
+    "availability": "24/7"
+  },
+  "situation": {
+    "profile": "2-3 sentences with SPECIFIC numbers (employees, clients, properties, calls per day)",
+    "problem": "2-3 sentences about the core problem with numbers. What happens during peak times? What after hours?",
+    "consequence": "1-2 sentences: Emotional + business impact. Specific example of what goes wrong."
+  },
+  "useCases": ["UC1 (with bracket details)", "UC2", "UC3", "UC4", "UC5"],
+  "playbooks": [
+    {
+      "name": "Playbook 1: [Descriptive Name]",
+      "trigger": "The caller [specific trigger]",
+      "tasks": [
+        {"field": "field_name_snake_case", "question": "Natural, polite question?"}
+      ],
+      "action": "When [condition], [specific action] occurs."
+    }
+  ],
+  "results": {
+    "comparison": [
+      {"metric": "Availability", "before": "Mon-Fri Xam-Xpm", "after": "24/7/365"},
+      {"metric": "Missed calls", "before": "~XX/day", "after": "0"},
+      {"metric": "Phone time per day (team)", "before": "X-X hours", "after": "XX minutes"},
+      {"metric": "Response time critical cases (nights/weekends)", "before": "Next business day", "after": "Immediate"},
+      {"metric": "Post-processing per call", "before": "X-X minutes", "after": "0 (automatic)"}
+    ],
+    "savings": [
+      {"area": "Answering calls & standard questions", "hours": "~40"},
+      {"area": "Capturing & documenting information", "hours": "~15"},
+      {"area": "Coordinating transfers", "hours": "~5"},
+      {"area": "Callbacks due to missing info", "hours": "~5"}
+    ],
+    "totalHours": "~65",
+    "savingsNote": "This is equivalent to almost a full work week per month",
+    "quote": "Authentic quote with specific before/after moment, no advertising"
+  },
+  "automations": [
+    {"type": "pre-call", "trigger": "Incoming call", "action": "Match phone number in CRM, provide customer data to agent"},
+    {"type": "pre-call", "trigger": "Customer identified", "action": "Load open tickets/cases, agent knows context"},
+    {"type": "in-call", "trigger": "Critical case detected", "action": "Immediate transfer to emergency service"},
+    {"type": "in-call", "trigger": "Appointment requested", "action": "Live calendar query, offer available slots during call"},
+    {"type": "post-call", "trigger": "Issue captured", "action": "Create ticket/case in industry software"},
+    {"type": "post-call", "trigger": "Call ended", "action": "Send summary email to responsible team member"}
+  ],
+  "workflow": {
+    "title": "Example: [Dramatic scenario outside business hours]",
+    "steps": [
+      {"time": "XX:XX", "desc": "Specific action"}
+    ],
+    "contrast": "Without AI Agent: [What would have happened instead – specific, with costs/time]"
+  },
+  "features": [
+    "FAQ & Knowledge Base (industry-specific content)",
+    "4 Playbooks for structured processes",
+    "Intelligent intent recognition",
+    "Transfer for critical cases",
+    "Email summaries after every call",
+    "Webhook integration for post-call automation",
+    "GDPR-compliant EU data hosting"
+  ],
+  "demoPrompts": ["Realistic sentence 1", "Sentence 2", "Sentence 3", "Sentence 4"],
+  "agentName": "Suitable English first name"
+}`;
+
+const SYSTEM_PROMPT = (playbookCount = 4, language = 'de') =>
+  language === 'en' ? SYSTEM_PROMPT_EN(playbookCount) : SYSTEM_PROMPT_DE(playbookCount);
+
 export default function CaseStudyBuilder() {
   const [step, setStep] = useState('input');
   const [loading, setLoading] = useState(false);
@@ -226,6 +434,8 @@ export default function CaseStudyBuilder() {
   const [specificUseCase, setSpecificUseCase] = useState('');
   const [salesPerson, setSalesPerson] = useState('');
   const [playbookCount, setPlaybookCount] = useState(4);
+  const [language, setLanguage] = useState('de');
+  const l = t[language];
 
   useEffect(() => {
     setApiKeySet(isApiKeyConfigured());
@@ -240,12 +450,12 @@ export default function CaseStudyBuilder() {
       duration_seconds: 180,
       playbook: playbookSlug,
       data: Object.fromEntries(cs.playbooks[0]?.tasks?.slice(0, 4).map(t => [t.field, "..."]) || []),
-      tags: ["beispiel"],
-      weiterleitung: "keine"
+      tags: JSON.parse(l.webhookTags),
+      forwarding: JSON.parse(l.webhookForward)
     }, null, 2);
 
     return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${language}"
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -438,23 +648,23 @@ export default function CaseStudyBuilder() {
       </div>
       <h1>${cs.title}</h1>
       <div class="metrics">
-        <div class="metric"><div class="metric-value">${cs.metrics.automation}</div><div class="metric-label">der Anrufe automatisiert</div></div>
-        <div class="metric"><div class="metric-value">${cs.metrics.time}</div><div class="metric-label">pro Monat eingespart</div></div>
-        <div class="metric"><div class="metric-value">${cs.metrics.availability}</div><div class="metric-label">erreichbar</div></div>
+        <div class="metric"><div class="metric-value">${cs.metrics.automation}</div><div class="metric-label">${l.htmlMetricAutomation}</div></div>
+        <div class="metric"><div class="metric-value">${cs.metrics.time}</div><div class="metric-label">${l.htmlMetricTime}</div></div>
+        <div class="metric"><div class="metric-value">${cs.metrics.availability}</div><div class="metric-label">${l.htmlMetricAvailability}</div></div>
       </div>
     </div>
     <section class="situation section">
-      <h2>Ausgangssituation</h2>
+      <h2>${l.htmlSituation}</h2>
       <p>${cs.situation.profile}</p>
       <p>${cs.situation.problem}</p>
       <div class="consequence">${cs.situation.consequence}</div>
     </section>
     <section class="solution-section section">
-      <h2>Die Lösung mit sipgate AI Agents</h2>
+      <h2>${l.htmlSolution}</h2>
       <div class="use-cases">${cs.useCases.map(uc => `<span class="use-case">${uc}</span>`).join('')}</div>
     </section>
     <section class="playbooks-section section">
-      <h2>Playbooks</h2>
+      <h2>${l.htmlPlaybooks}</h2>
       <div class="playbooks-grid">
       ${cs.playbooks.map(pb => `
         <div class="playbook">
@@ -463,7 +673,7 @@ export default function CaseStudyBuilder() {
             <span class="playbook-trigger">${pb.trigger}</span>
           </div>
           <table>
-            <tr><th>Feld</th><th>Frage</th></tr>
+            <tr><th>${l.htmlFieldCol}</th><th>${l.htmlQuestionCol}</th></tr>
             ${pb.tasks.slice(0, 5).map(t => `<tr><td>${t.field}</td><td>${t.question}</td></tr>`).join('')}
           </table>
           ${pb.action ? `<div class="playbook-action">⚡ ${pb.action}</div>` : ''}
@@ -473,22 +683,22 @@ export default function CaseStudyBuilder() {
   </div>
   <div class="page page-2">
     <section class="results-section section">
-      <h2>Die Ergebnisse</h2>
+      <h2>${l.htmlResults}</h2>
       <div class="results-grid">
         <div class="results-table">
           <table>
-            <tr><th>Kennzahl</th><th>Vorher</th><th>Nachher</th></tr>
+            <tr><th>${l.htmlMetricCol}</th><th>${l.htmlBefore}</th><th>${l.htmlAfter}</th></tr>
             ${cs.results.comparison.map(r => `<tr><td>${r.metric}</td><td class="before">${r.before}</td><td class="after">${r.after}</td></tr>`).join('')}
           </table>
         </div>
         <div class="savings-container">
           <div class="savings-list">
-            <h4>Zeitersparnis im Detail</h4>
-            ${cs.results.savings.map(s => `<div class="savings-row"><span>${s.area}</span><span>${s.hours} Std.</span></div>`).join('')}
+            <h4>${l.htmlSavingsDetail}</h4>
+            ${cs.results.savings.map(s => `<div class="savings-row"><span>${s.area}</span><span>${s.hours} ${l.htmlSavingsUnit}</span></div>`).join('')}
           </div>
           <div class="savings-total">
             <div class="savings-value">${cs.results.totalHours}</div>
-            <div class="savings-label">Std./Monat</div>
+            <div class="savings-label">${l.htmlSavingsTotalUnit}</div>
           </div>
         </div>
       </div>
@@ -496,12 +706,12 @@ export default function CaseStudyBuilder() {
       <div class="quote"><p>${cs.results.quote}</p></div>
     </section>
     <section class="integration section">
-      <h2>Integration & Automatisierung</h2>
+      <h2>${l.htmlIntegration}</h2>
       <div class="webhook">
-        <div class="webhook-label">Webhook-Payload Beispiel (nach ${cs.playbooks[0]?.name?.split(':')[1]?.trim() || 'Anruf'})</div>
+        <div class="webhook-label">${l.htmlWebhookLabel(cs.playbooks[0]?.name?.split(':')[1]?.trim() || (language === 'en' ? 'Call' : 'Anruf'))}</div>
         <pre>${webhookExample}</pre>
       </div>
-      <div class="automations-header"><h2>Automatisierungen</h2></div>
+      <div class="automations-header"><h2>${l.htmlAutomations}</h2></div>
       <div class="automations-grid">
         <div class="automation-group">
           <div class="automation-group-label">🔍 Pre-Call</div>
@@ -518,7 +728,7 @@ export default function CaseStudyBuilder() {
       </div>
     </section>
     <section class="workflow-section section">
-      <h2>Workflow-Beispiel</h2>
+      <h2>${l.htmlWorkflow}</h2>
       <div class="workflow">
         <h4>${cs.workflow.title}</h4>
         <div class="workflow-steps">
@@ -528,13 +738,13 @@ export default function CaseStudyBuilder() {
       </div>
     </section>
     <section class="features-section section">
-      <h2>Eingesetzte Features</h2>
+      <h2>${l.htmlFeatures}</h2>
       <div class="features-grid">
         ${(cs.features || []).map(f => `<span class="feature">${f}</span>`).join('')}
       </div>
     </section>
     <div class="footer">
-      <div class="footer-info">sipgate AI Agents · DSGVO-konform · Made in Germany</div>
+      <div class="footer-info">${l.htmlFooter}</div>
     </div>
   </div>
 </body>
@@ -549,19 +759,19 @@ export default function CaseStudyBuilder() {
       duration_seconds: 180,
       playbook: playbookSlug,
       data: Object.fromEntries(cs.playbooks[0]?.tasks?.slice(0, 4).map(t => [t.field, "..."]) || []),
-      tags: ["beispiel"],
-      weiterleitung: "keine"
+      tags: JSON.parse(l.webhookTags),
+      forwarding: JSON.parse(l.webhookForward)
     }, null, 2);
 
     return `# ${cs.title}
 
 ---
 
-**${cs.metrics.automation}** der Anrufe automatisiert | **${cs.metrics.time}** pro Monat eingespart | **${cs.metrics.availability}** erreichbar
+${l.mdMetrics(cs.metrics.automation, cs.metrics.time, cs.metrics.availability)}
 
 ---
 
-## Ausgangssituation
+## ${l.mdSituation}
 
 ${cs.situation.profile}
 
@@ -571,11 +781,11 @@ ${cs.situation.problem}
 
 ---
 
-## Die Lösung mit sipgate AI Agents
+## ${l.mdSolution}
 
-### Eingesetzte Use Cases
+### ${l.mdUseCases}
 
-Der AI Agent übernimmt den First-Level-Support und erkennt automatisch, um welches Anliegen es sich handelt:
+${l.mdUseCaseIntro}
 
 ${cs.useCases.map(uc => `- **${uc.split(' (')[0]}**${uc.includes('(') ? ' (' + uc.split('(')[1] : ''}`).join('\n')}
 
@@ -585,81 +795,81 @@ ${cs.playbooks.map(pb => `### ${pb.name}
 
 **Trigger:** ${pb.trigger}
 
-| Aufgabe (Titel) | Frage an den Anrufer |
+| ${l.mdTaskCol} | ${l.mdQuestionCol} |
 |-----------------|----------------------|
 ${pb.tasks.map(t => `| \`${t.field}\` | ${t.question} |`).join('\n')}
 
-${pb.action ? `**Intelligente Weiterleitung:** ${pb.action}` : ''}
+${pb.action ? `**${l.mdSmartRouting}** ${pb.action}` : ''}
 
 ---
 `).join('\n')}
 
-### Intelligente Erkennung
+### ${l.mdRecognition}
 
-Der Agent erkennt anhand des Gesprächs automatisch, welches Playbook relevant ist. Der Übergang ist nahtlos – der Anrufer muss keine Menüauswahl treffen.
+${l.mdRecognitionDesc}
 
 ---
 
-## Die Ergebnisse
+## ${l.mdResults}
 
-### Vorher/Nachher im Vergleich
+### ${l.mdComparison}
 
-| Kennzahl | Vorher | Nachher |
+| ${l.mdMetricCol} | ${l.mdBefore} | ${l.mdAfter} |
 |----------|--------|---------|
 ${cs.results.comparison.map(r => `| ${r.metric} | ${r.before} | **${r.after}** |`).join('\n')}
 
-### Zeitersparnis im Detail
+### ${l.mdSavings}
 
-| Bereich | Zeitersparnis pro Monat |
+| ${l.mdSavingsCol} | ${l.mdSavingsTimeCol} |
 |---------|-------------------------|
-${cs.results.savings.map(s => `| ${s.area} | ${s.hours} Stunden |`).join('\n')}
-| **Gesamt** | **${cs.results.totalHours} Stunden** |
+${cs.results.savings.map(s => `| ${s.area} | ${s.hours} ${l.mdSavingsUnit} |`).join('\n')}
+| **${l.mdTotal}** | **${cs.results.totalHours} ${l.mdSavingsUnit}** |
 
-*${cs.results.savingsNote || 'Das entspricht signifikanter Entlastung für das Team.'}*
+*${cs.results.savingsNote || l.mdSavingsDefault}*
 
-### Stimme aus der Praxis
+### ${l.mdVoice}
 
 > "${cs.results.quote}"
 
 ---
 
-## Integrationspotenzial: Drittsysteme & Automatisierung
+## ${l.mdIntegration}
 
-### Webhook-Integration
+### ${l.mdWebhook}
 
-Nach jedem Gespräch sendet sipgate AI Agents eine strukturierte Daten-Payload per Webhook. Die Felder entsprechen exakt den Aufgaben-Titeln aus den Playbooks:
+${l.mdWebhookDesc}
 
-**Beispiel-Payload nach ${cs.playbooks[0]?.name?.split(':')[1]?.trim() || 'einem Anruf'}:**
+**${l.mdWebhookExample(cs.playbooks[0]?.name?.split(':')[1]?.trim() || (language === 'en' ? 'a call' : 'einem Anruf'))}**
 
 \`\`\`json
 ${webhookExample}
 \`\`\`
 
-### Automatisierungen
+### ${l.mdAutomations}
 
-Mit Tools wie Make, Zapier oder n8n lassen sich automatische Prozesse in allen Phasen des Anrufs auslösen:
+${l.mdAutomationsIntro}
 
-#### 🔍 Pre-Call (Anrufer-Identifikation & Kontext)
+#### ${l.mdPreCall}
 
-| Trigger | Automatische Aktion |
+| ${l.mdTriggerCol} | ${l.mdActionCol} |
 |---------|---------------------|
 ${cs.automations.filter(a => a.type === 'pre-call').map(a => `| ${a.trigger} | ${a.action} |`).join('\n')}
 
-#### 📞 In-Call (Während des Gesprächs)
+#### ${l.mdInCall}
 
-| Trigger | Automatische Aktion |
+| ${l.mdTriggerCol} | ${l.mdActionCol} |
 |---------|---------------------|
 ${cs.automations.filter(a => a.type === 'in-call').map(a => `| ${a.trigger} | ${a.action} |`).join('\n')}
 
-#### ✅ Post-Call (Nach dem Gespräch)
+#### ${l.mdPostCall}
 
-| Trigger | Automatische Aktion |
+| ${l.mdTriggerCol} | ${l.mdActionCol} |
 |---------|---------------------|
 ${cs.automations.filter(a => a.type === 'post-call').map(a => `| ${a.trigger} | ${a.action} |`).join('\n')}
 
 ### ${cs.workflow.title}
 
-| Uhrzeit | Was passiert |
+| ${l.mdWorkflowTimeCol} | ${l.mdWorkflowEventCol} |
 |---------|--------------|
 ${cs.workflow.steps.map(s => `| ${s.time} | ${s.desc} |`).join('\n')}
 
@@ -667,13 +877,13 @@ ${cs.workflow.steps.map(s => `| ${s.time} | ${s.desc} |`).join('\n')}
 
 ---
 
-## Eingesetzte Features
+## ${l.mdFeaturesTitle}
 
 ${(cs.features || []).map(f => `✅ ${f}`).join('\n')}
 
 ---
 
-*sipgate AI Agents | DSGVO-konform | Made in Germany*
+${l.mdFooter}
 `;
   };
 
@@ -681,8 +891,8 @@ ${(cs.features || []).map(f => `✅ ${f}`).join('\n')}
     return {
       agent: {
         name: cs.agentName,
-        greeting: `Guten Tag, Sie sprechen mit ${cs.agentName}. Wie kann ich Ihnen helfen?`,
-        language: "de-DE"
+        greeting: l.agentGreeting(cs.agentName),
+        language: l.agentLanguage
       },
       playbooks: cs.playbooks.map(pb => ({
         name: pb.name.split(':')[1]?.trim() || pb.name,
@@ -717,7 +927,24 @@ ${(cs.features || []).map(f => `✅ ${f}`).join('\n')}
     setLoading(true);
     setError(null);
 
-    const userPrompt = `Erstelle jetzt eine Case Study für:
+    const userPrompt = language === 'en'
+      ? `Create a case study now for:
+
+• Industry: ${industry}
+• Company size: ${companySize}
+• Call volume: ${callVolume} per day
+${specificUseCase ? `• Known use case: ${specificUseCase}` : ''}
+• Number of playbooks: ${playbookCount}
+
+IMPORTANT:
+- Create EXACTLY ${playbookCount} playbooks with 5-6 tasks each
+- Create EXACTLY 5 comparison rows in results.comparison
+- Create EXACTLY 4 entries in results.savings (the sum must equal totalHours)
+- Use tilde (~) for hour figures
+- Playbook field names must be consistent snake_case
+
+Deliver highest quality. Respond ONLY with the JSON.`
+      : `Erstelle jetzt eine Case Study für:
 
 • Branche: ${industry}
 • Unternehmensgröße: ${companySize}
@@ -735,7 +962,7 @@ WICHTIG:
 Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
 
     try {
-      const result = await generateCaseStudy(SYSTEM_PROMPT(playbookCount), userPrompt, playbookCount);
+      const result = await generateCaseStudy(SYSTEM_PROMPT(playbookCount, language), userPrompt, playbookCount);
 
       if (result.success) {
         setCaseStudy(result.data);
@@ -744,7 +971,7 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
         setError(result.error);
       }
     } catch (err) {
-      setError('Unerwarteter Fehler: ' + err.message);
+      setError(l.unexpectedError + err.message);
     }
 
     setLoading(false);
@@ -804,31 +1031,31 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
               <span className="text-xs font-semibold uppercase tracking-wide opacity-70">sipgate AI Agents</span>
               <span className="font-extrabold text-xl">sipgate</span>
             </div>
-            <h1 className="text-3xl font-extrabold mb-2">⚠️ API-Key erforderlich</h1>
+            <h1 className="text-3xl font-extrabold mb-2">{l.apiKeyRequired}</h1>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg space-y-4">
-            <p className="text-gray-700">Um den Case Study Builder zu nutzen, benötigen Sie einen OpenAI API-Key.</p>
+            <p className="text-gray-700">{l.apiKeyDescription}</p>
 
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-              <h3 className="font-bold text-blue-900 mb-2">So richten Sie den API-Key ein:</h3>
+              <h3 className="font-bold text-blue-900 mb-2">{l.apiKeySetupTitle}</h3>
               <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-                <li>Besuchen Sie <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-semibold">platform.openai.com/api-keys</a></li>
-                <li>Erstellen Sie einen neuen API-Key</li>
-                <li>Erstellen Sie eine <code className="bg-blue-100 px-2 py-1 rounded">.env</code> Datei im Projektverzeichnis</li>
-                <li>Fügen Sie hinzu: <code className="bg-blue-100 px-2 py-1 rounded">VITE_OPENAI_API_KEY=ihr_key</code></li>
-                <li>Starten Sie die Anwendung neu</li>
+                <li>{l.apiKeyStep1} <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-semibold">platform.openai.com/api-keys</a></li>
+                <li>{l.apiKeyStep2}</li>
+                <li>{l.apiKeyStep3} <code className="bg-blue-100 px-2 py-1 rounded">.env</code> {l.apiKeyStep3b}</li>
+                <li>{l.apiKeyStep4} <code className="bg-blue-100 px-2 py-1 rounded">VITE_OPENAI_API_KEY=your_key</code></li>
+                <li>{l.apiKeyStep5}</li>
               </ol>
             </div>
 
             <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
               <p className="text-sm text-yellow-800">
-                <strong>Hinweis:</strong> Für Produktivumgebungen sollte der API-Key über ein Backend verwaltet werden, nicht im Browser.
+                <strong>{l.apiKeyHint}</strong> {l.apiKeyNote}
               </p>
             </div>
 
             <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-              <h3 className="font-bold text-green-900 mb-2">💡 PDF-Export direkt testen</h3>
-              <p className="text-sm text-green-800 mb-3">Möchten Sie den PDF-Export ohne API-Key testen? Ich habe eine fertige Beispiel-Case Study für Sie vorbereitet!</p>
+              <h3 className="font-bold text-green-900 mb-2">{l.sampleTestTitle}</h3>
+              <p className="text-sm text-green-800 mb-3">{l.sampleTestDesc}</p>
               <button
                 onClick={() => {
                   setCaseStudy(sampleCaseStudy);
@@ -838,7 +1065,7 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
                 }}
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
               >
-                Beispiel-Case Study laden →
+                {l.sampleTestButton}
               </button>
             </div>
           </div>
@@ -856,12 +1083,12 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
               <span className="text-xs font-semibold uppercase tracking-wide opacity-70">sipgate AI Agents</span>
               <span className="font-extrabold text-xl">sipgate</span>
             </div>
-            <h1 className="text-3xl font-extrabold mb-2">Case Study Builder</h1>
-            <p className="text-gray-700">Branchenspezifische Case Studies in Premium-Qualität</p>
+            <h1 className="text-3xl font-extrabold mb-2">{l.appTitle}</h1>
+            <p className="text-gray-700">{l.appSubtitle}</p>
             <div className="mt-4 flex items-center justify-between gap-3">
               {modelInfo && (
                 <div className="flex-1 text-xs bg-white/30 rounded-lg px-3 py-2">
-                  <span className="font-semibold">Powered by {modelInfo.name}</span> — Das leistungsstärkste Modell
+                  <span className="font-semibold">{l.poweredBy(modelInfo.name)}</span> {l.poweredBySuffix}
                 </div>
               )}
               <div className="text-xs bg-black/20 rounded-lg px-3 py-2 font-mono">
@@ -871,46 +1098,57 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg space-y-5">
             <div>
-              <label className="block text-sm font-semibold mb-2 text-gray-700">Branche *</label>
-              <input type="text" placeholder="z.B. Autohaus, Zahnarztpraxis, Steuerberater..." className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+              <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelIndustry}</label>
+              <input type="text" placeholder={l.placeholderIndustry} className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={industry} onChange={(e) => setIndustry(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">Größe *</label>
-                <input type="text" placeholder="z.B. 25 Mitarbeiter" className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={companySize} onChange={(e) => setCompanySize(e.target.value)} />
+                <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelSize}</label>
+                <input type="text" placeholder={l.placeholderSize} className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={companySize} onChange={(e) => setCompanySize(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">Anrufe/Tag *</label>
-                <input type="text" placeholder="z.B. 80" className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={callVolume} onChange={(e) => setCallVolume(e.target.value)} />
+                <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelCalls}</label>
+                <input type="text" placeholder={l.placeholderCalls} className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={callVolume} onChange={(e) => setCallVolume(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-2 text-gray-700">Bekannter Use Case <span className="font-normal text-gray-400">(optional)</span></label>
-              <input type="text" placeholder="z.B. Terminvereinbarung, Störungsmeldung..." className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={specificUseCase} onChange={(e) => setSpecificUseCase(e.target.value)} />
+              <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelUseCase} <span className="font-normal text-gray-400">{l.labelUseCaseOptional}</span></label>
+              <input type="text" placeholder={l.placeholderUseCase} className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={specificUseCase} onChange={(e) => setSpecificUseCase(e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">Anzahl Playbooks</label>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelPlaybooks}</label>
                 <select
                   value={playbookCount}
                   onChange={(e) => setPlaybookCount(parseInt(e.target.value))}
                   className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors bg-white"
                 >
-                  <option value={2}>2 Playbooks</option>
-                  <option value={3}>3 Playbooks</option>
-                  <option value={4}>4 Playbooks (Standard)</option>
-                  <option value={5}>5 Playbooks</option>
-                  <option value={6}>6 Playbooks</option>
+                  <option value={2}>{l.playbookOption(2)}</option>
+                  <option value={3}>{l.playbookOption(3)}</option>
+                  <option value={4}>{l.playbookOption(4)}</option>
+                  <option value={5}>{l.playbookOption(5)}</option>
+                  <option value={6}>{l.playbookOption(6)}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">Ihr Name <span className="font-normal text-gray-400">(optional)</span></label>
-                <input type="text" placeholder="Für den Kontakt im Dokument" className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} />
+                <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelLanguage}</label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors bg-white"
+                >
+                  <option value="de">Deutsch</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">{l.labelName} <span className="font-normal text-gray-400">{l.labelNameOptional}</span></label>
+                <input type="text" placeholder={l.placeholderName} className="w-full p-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-lime-400 transition-colors" value={salesPerson} onChange={(e) => setSalesPerson(e.target.value)} />
               </div>
             </div>
             {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm">{error}</div>}
             <button onClick={generate} disabled={loading || !industry || !companySize || !callVolume} className="w-full bg-black text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
-              {loading ? '⏳ Generiere mit GPT-4 Turbo...' : 'Case Study erstellen →'}
+              {loading ? l.buttonGenerating : l.buttonGenerate}
             </button>
 
             <div className="relative">
@@ -918,16 +1156,15 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">oder</span>
+                <span className="px-2 bg-white text-gray-500">{l.or}</span>
               </div>
             </div>
 
             <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
               <h3 className="font-bold text-green-900 mb-2 flex items-center gap-2">
-                <span>💡</span>
-                <span>PDF-Export direkt testen</span>
+                <span>{l.sampleBoxTitle}</span>
               </h3>
-              <p className="text-sm text-green-800 mb-3">Möchten Sie den PDF-Export ohne eigene Eingabe testen? Laden Sie eine fertige Beispiel-Case Study!</p>
+              <p className="text-sm text-green-800 mb-3">{l.sampleBoxDesc}</p>
               <button
                 onClick={() => {
                   setCaseStudy(sampleCaseStudy);
@@ -937,7 +1174,7 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
                 }}
                 className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-sm"
               >
-                Beispiel-Case Study laden (Autohaus) →
+                {l.sampleBoxButton}
               </button>
             </div>
           </div>
@@ -955,32 +1192,32 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
               <span className="text-xs font-semibold uppercase tracking-wide opacity-70">sipgate AI Agents</span>
               <span className="font-extrabold text-lg">sipgate</span>
             </div>
-            <h1 className="text-2xl font-extrabold mb-1">✓ Case Study erstellt</h1>
+            <h1 className="text-2xl font-extrabold mb-1">{l.resultTitle}</h1>
             <p className="text-gray-700 font-medium">{industry}</p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg space-y-4">
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">✏️ Inhalte bearbeiten</h2>
-              <p className="text-sm text-gray-500 mb-3">Passen Sie Texte, Metriken und Details vor dem Export an</p>
+              <h2 className="font-bold text-lg mb-2">{l.editTitle}</h2>
+              <p className="text-sm text-gray-500 mb-3">{l.editDesc}</p>
               <button
                 onClick={() => setShowPreview(true)}
                 style={{ background: LIME }}
                 className="w-full text-black py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
-                Vorschau & Bearbeiten →
+                {l.editButton}
               </button>
             </div>
 
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">📄 Als PDF speichern</h2>
-              <p className="text-sm text-gray-500 mb-3">Öffnet Print-Dialog → "Als PDF speichern" wählen</p>
+              <h2 className="font-bold text-lg mb-2">{l.pdfTitle}</h2>
+              <p className="text-sm text-gray-500 mb-3">{l.pdfDesc}</p>
               <button onClick={handlePrintPDF} className="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
-                🖨️ Drucken / Als PDF speichern
+                {l.pdfButton}
               </button>
             </div>
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">🌐 HTML für Print</h2>
-              <p className="text-sm text-gray-500 mb-3">HTML-Version zum Drucken oder Weiterverarbeiten</p>
+              <h2 className="font-bold text-lg mb-2">{l.htmlTitle}</h2>
+              <p className="text-sm text-gray-500 mb-3">{l.htmlDesc}</p>
               <button onClick={async () => {
                 let logoDataUrl = null;
                 try {
@@ -992,31 +1229,31 @@ Liefere höchste Qualität. Antworte NUR mit dem JSON.`;
                     reader.readAsDataURL(blob);
                   });
                 } catch (error) {
-                  console.warn('Logo konnte nicht geladen werden');
+                  console.warn('Logo could not be loaded');
                 }
                 downloadFile(generateHTML(caseStudy, logoDataUrl), `case-study-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.html`, 'text/html;charset=utf-8');
-              }} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">HTML herunterladen</button>
+              }} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">{l.htmlButton}</button>
             </div>
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">📝 Markdown</h2>
-              <p className="text-sm text-gray-500 mb-3">Vollständiger Inhalt für andere Design-Tools</p>
-              <button onClick={() => downloadFile(generateMarkdown(caseStudy), `case-study-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`, 'text/markdown;charset=utf-8')} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">Markdown herunterladen</button>
+              <h2 className="font-bold text-lg mb-2">{l.mdTitle}</h2>
+              <p className="text-sm text-gray-500 mb-3">{l.mdDesc}</p>
+              <button onClick={() => downloadFile(generateMarkdown(caseStudy), `case-study-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.md`, 'text/markdown;charset=utf-8')} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">{l.mdButton}</button>
             </div>
             <div className="pb-4 border-b">
-              <h2 className="font-bold text-lg mb-2">🤖 Agent-Konfiguration</h2>
-              <p className="text-sm text-gray-500 mb-3">JSON mit Playbooks, Use Cases & FAQ für den Demo-Agent</p>
-              <button onClick={() => downloadFile(JSON.stringify(generateAgentConfig(caseStudy), null, 2), `agent-config-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json`, 'application/json')} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">JSON herunterladen</button>
+              <h2 className="font-bold text-lg mb-2">{l.configTitle}</h2>
+              <p className="text-sm text-gray-500 mb-3">{l.configDesc}</p>
+              <button onClick={() => downloadFile(JSON.stringify(generateAgentConfig(caseStudy), null, 2), `agent-config-${industry.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json`, 'application/json')} className="w-full bg-gray-100 text-black py-3 rounded-xl font-semibold hover:bg-gray-200 border-2 border-gray-200 transition-colors">{l.configButton}</button>
             </div>
-            <button onClick={() => { setStep('input'); setCaseStudy(null); }} className="w-full py-3 text-gray-500 hover:text-black font-medium transition-colors">← Neue Case Study</button>
+            <button onClick={() => { setStep('input'); setCaseStudy(null); }} className="w-full py-3 text-gray-500 hover:text-black font-medium transition-colors">{l.newCaseStudy}</button>
           </div>
           <div className="mt-6 bg-white rounded-2xl p-5 shadow-lg">
-            <h3 className="font-bold mb-3">Vorschau</h3>
+            <h3 className="font-bold mb-3">{l.previewTitle}</h3>
             <div className="text-sm space-y-2 text-gray-600">
-              <p><span className="font-semibold text-black">Agent:</span> {caseStudy.agentName}</p>
-              <p><span className="font-semibold text-black">Playbooks:</span> {caseStudy.playbooks.length}</p>
-              <p><span className="font-semibold text-black">Use Cases:</span> {caseStudy.useCases.length}</p>
-              <p><span className="font-semibold text-black">Zeitersparnis:</span> {caseStudy.results.totalHours} Std./Monat</p>
-              <p><span className="font-semibold text-black">Automatisierungen:</span> {caseStudy.automations.length}</p>
+              <p><span className="font-semibold text-black">{l.previewAgent}</span> {caseStudy.agentName}</p>
+              <p><span className="font-semibold text-black">{l.previewPlaybooks}</span> {caseStudy.playbooks.length}</p>
+              <p><span className="font-semibold text-black">{l.previewUseCases}</span> {caseStudy.useCases.length}</p>
+              <p><span className="font-semibold text-black">{l.previewSavings}</span> {caseStudy.results.totalHours} {l.previewSavingsUnit}</p>
+              <p><span className="font-semibold text-black">{l.previewAutomations}</span> {caseStudy.automations.length}</p>
             </div>
           </div>
         </div>

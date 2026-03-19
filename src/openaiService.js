@@ -78,9 +78,8 @@ const generateViaDirect = async (systemPrompt, userPrompt, playbookCount = 4, re
       ],
       temperature: 0.7, // Reduziert von 1 für schnellere, fokussiertere Antworten
       max_tokens: 16000,
-      response_format: { type: "json_object" },
-      timeout: 180000 // 3 Minuten Timeout (erhöht von 2 Minuten)
-    });
+      response_format: { type: "json_object" }
+    }, { timeout: 180000 });
 
     console.log('✅ Received response from OpenAI');
     console.log('📊 Tokens used:', response.usage.total_tokens);
